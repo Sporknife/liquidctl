@@ -16,32 +16,34 @@ from liquidctl.driver.usb import UsbHidDriver
 from liquidctl.util import normalize_profile, interpolate_profile, clamp, \
                            Hue2Accessory, HUE2_MAX_ACCESSORIES_IN_CHANNEL, \
                            map_direction
+from typing import Dict, List, Final, Tuple, Union
+from liquidctl import custom_types
 
 _LOGGER = logging.getLogger(__name__)
 
-_READ_LENGTH = 64
-_WRITE_LENGTH = 64
-_MAX_READ_ATTEMPTS = 12
+_READ_LENGTH: Final[int] = 64
+_WRITE_LENGTH: Final[int] = 64
+_MAX_READ_ATTEMPTS: Final[int] = 12
 
 # Available speed channels for model X coolers
 # name -> (channel_id, min_duty, max_duty)
 # TODO adjust min duty value to what the firmware enforces
-_SPEED_CHANNELS_KRAKENX = {
+_SPEED_CHANNELS_KRAKENX: Final[Dict[str, Tuple[int, int, int]]] = {
     'pump': (0x1, 20, 100),
 }
 
 # Available speed channels for model Z coolers
 # name -> (channel_id, min_duty, max_duty)
 # TODO adjust min duty values to what the firmware enforces
-_SPEED_CHANNELS_KRAKENZ = {
+_SPEED_CHANNELS_KRAKENZ: Final[Dict[str, Tuple[int, int, int]]] = {
     'pump': (0x1, 20, 100),
     'fan': (0x2, 0, 100),
 }
 
-_CRITICAL_TEMPERATURE = 59
+_CRITICAL_TEMPERATURE: Final[int] = 59
 
 # Available color channels and IDs for model X coolers
-_COLOR_CHANNELS_KRAKENX = {
+_COLOR_CHANNELS_KRAKENX: Final[Dict[str, int]] = {
     'external': 0b001,
     'ring': 0b010,
     'logo': 0b100,
@@ -49,7 +51,7 @@ _COLOR_CHANNELS_KRAKENX = {
 }
 
 # Available color channels and IDs for model Z coolers
-_COLOR_CHANNELS_KRAKENZ = {
+_COLOR_CHANNELS_KRAKENZ: Final[Dict[str, int]] = {
     'external': 0b001,
 }
 
@@ -59,7 +61,7 @@ _COLOR_CHANNELS_KRAKENZ = {
 # FIXME are all modes really supported by all channels? (this is better because
 #       of synchronization, but it's not how the previous generation worked, so
 #       I would like to double check)
-_COLOR_MODES = {
+_COLOR_MODES: custom_types._ColorModesType = {
     'off':                                  (0x00, 0x00,  0, 0, 0),
     'fixed':                                (0x00, 0x00,  0, 1, 1),
     'fading':                               (0x01, 0x00,  1, 1, 8),
@@ -110,7 +112,7 @@ _COLOR_MODES = {
 # A static value per channel that is somehow related to animation time and
 # synchronization, although the specific mechanism is not yet understood.
 # Could require information from `initialize`, but more testing is required.
-_STATIC_VALUE = {
+_STATIC_VALUE: Dict[int, int] = {
     0b001: 40,  # may result in long all-off intervals (FIXME?)
     0b010: 8,
     0b100: 1,
@@ -119,7 +121,7 @@ _STATIC_VALUE = {
 
 # Speed scale/timing bytes
 # scale -> (slowest, slower, normal, faster, fastest)
-_SPEED_VALUE = {
+_SPEED_VALUE: Dict[int, Tuple[List[int], ...]] = {
     0:  ([0x32, 0x00], [0x32, 0x00], [0x32, 0x00], [0x32, 0x00], [0x32, 0x00]),
     1:  ([0x50, 0x00], [0x3c, 0x00], [0x28, 0x00], [0x14, 0x00], [0x0a, 0x00]),
     2:  ([0x5e, 0x01], [0x2c, 0x01], [0xfa, 0x00], [0x96, 0x00], [0x50, 0x00]),
@@ -134,7 +136,7 @@ _SPEED_VALUE = {
     11: ([0x6e, 0x00], [0x53, 0x00], [0x39, 0x00], [0x2e, 0x00], [0x20, 0x00]),
 }
 
-_ANIMATION_SPEEDS = {
+_ANIMATION_SPEEDS: Dict[str, int] = {
     'slowest': 0x0,
     'slower': 0x1,
     'normal': 0x2,
@@ -146,14 +148,14 @@ _ANIMATION_SPEEDS = {
 class KrakenX3(UsbHidDriver):
     """Fourth-generation Kraken X liquid cooler."""
 
-    SUPPORTED_DEVICES = [
+    SUPPORTED_DEVICES: custom_types.SupportedDevicesType = [
         (0x1e71, 0x2007, None, 'NZXT Kraken X (X53, X63 or X73)', {
             'speed_channels': _SPEED_CHANNELS_KRAKENX,
             'color_channels': _COLOR_CHANNELS_KRAKENX,
         })
     ]
 
-    def __init__(self, device, description, speed_channels, color_channels, **kwargs):
+    def __init__(self, device, description, speed_channels, color_channels, **kwargs) -> None:
         super().__init__(device, description)
         self._speed_channels = speed_channels
         self._color_channels = color_channels
@@ -205,7 +207,7 @@ class KrakenX3(UsbHidDriver):
         self._read_until({b'\x11\x01': parse_firm_info, b'\x21\x03': parse_led_info})
         return sorted(status)
 
-    def get_status(self, **kwargs):
+    def get_status(self, **kwargs) -> List[Tuple[str, Union[int, float], str]]:
         """Get a status report.
 
         Returns a list of `(property, value, unit)` tuples.
@@ -223,7 +225,7 @@ class KrakenX3(UsbHidDriver):
             ('Pump duty', msg[19], '%'),
         ]
 
-    def set_color(self, channel, mode, colors, speed='normal', direction='forward', **kwargs):
+    def set_color(self, channel, mode, colors, speed='normal', direction='forward', **kwargs) -> None:
         """Set the color mode for a specific channel."""
 
         if 'backwards' in mode:
@@ -247,7 +249,7 @@ class KrakenX3(UsbHidDriver):
         sval = _ANIMATION_SPEEDS[speed]
         self._write_colors(cid, mode, colors, sval, direction)
 
-    def set_speed_profile(self, channel, profile, **kwargs):
+    def set_speed_profile(self, channel, profile, **kwargs) -> None:
         """Set channel to use a speed profile."""
         cid, dmin, dmax = self._speed_channels[channel]
         header = [0x72, cid, 0x00, 0x00]
@@ -259,7 +261,7 @@ class KrakenX3(UsbHidDriver):
                          channel, duty, temp)
         self._write(header + interp)
 
-    def set_fixed_speed(self, channel, duty, **kwargs):
+    def set_fixed_speed(self, channel, duty, **kwargs) -> None:
         """Set channel to a fixed speed duty."""
         self.set_speed_profile(channel, [(0, duty), (_CRITICAL_TEMPERATURE - 1, duty)])
 
@@ -267,7 +269,7 @@ class KrakenX3(UsbHidDriver):
         data = self.device.read(_READ_LENGTH)
         return data
 
-    def _read_until(self, parsers):
+    def _read_until(self, parsers) -> None:
         for _ in range(_MAX_READ_ATTEMPTS):
             msg = self.device.read(_READ_LENGTH)
             prefix = bytes(msg[0:2])
@@ -278,11 +280,11 @@ class KrakenX3(UsbHidDriver):
                 return
         assert False, f'missing messages (attempts={_MAX_READ_ATTEMPTS}, missing={len(parsers)})'
 
-    def _write(self, data):
+    def _write(self, data) -> None:
         padding = [0x0] * (_WRITE_LENGTH - len(data))
         self.device.write(data + padding)
 
-    def _write_colors(self, cid, mode, colors, sval, direction):
+    def _write_colors(self, cid, mode, colors, sval, direction) -> None:
         mval, size_variant, speed_scale, mincolors, maxcolors = _COLOR_MODES[mode]
         color_count = len(colors)
 
@@ -355,7 +357,7 @@ class KrakenZ3(KrakenX3):
         })
     ]
 
-    def get_status(self, **kwargs):
+    def get_status(self, **kwargs) -> List[Tuple[str, Union[int, float], str]]:
         """Get a status report.
 
         Returns a list of `(property, value, unit)` tuples.
