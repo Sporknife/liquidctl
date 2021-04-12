@@ -69,6 +69,9 @@ except ModuleNotFoundError:
 
 from liquidctl.driver.base import BaseDriver, BaseBus, find_all_subclasses
 from liquidctl.util import LazyHexRepr
+from liquidctl import custom_types
+
+from typing import List, Dict, Tuple, Union, Optional
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -86,7 +89,7 @@ class BaseUsbDriver(BaseDriver):
     receives, to the constructor.
     """
 
-    SUPPORTED_DEVICES = []
+    SUPPORTED_DEVICES: List = []
 
     @classmethod
     def probe(cls, handle, vendor=None, product=None, release=None,
@@ -118,7 +121,7 @@ class BaseUsbDriver(BaseDriver):
         self.device.open()
         return self
 
-    def disconnect(self, **kwargs):
+    def disconnect(self, **kwargs) -> None:
         """Disconnect from the device."""
         self.device.close()
 
@@ -235,7 +238,7 @@ class PyUsbDevice:
     def _select_interface(self, cfg):
         return self.bInterfaceNumber or 0
 
-    def open(self, bInterfaceNumber=0):
+    def open(self, bInterfaceNumber=0) -> None:
         """Connect to the device.
 
         Ensure the device is configured and replace the kernel kernel on the
@@ -265,12 +268,12 @@ class PyUsbDevice:
             self.usbdev.detach_kernel_driver(self.bInterfaceNumber)
             self._attached = True
 
-    def claim(self):
+    def claim(self) -> None:
         """Explicitly claim the device from other programs."""
         _LOGGER.debug('explicitly claim interface')
         usb.util.claim_interface(self.usbdev, self.bInterfaceNumber)
 
-    def release(self):
+    def release(self) -> None:
         """Release the device to other programs."""
         if sys.platform == 'win32':
             # on Windows we need to release the entire device for other
@@ -283,7 +286,7 @@ class PyUsbDevice:
             _LOGGER.debug('explicitly release interface')
             usb.util.release_interface(self.usbdev, self.bInterfaceNumber)
 
-    def close(self):
+    def close(self) -> None:
         """Disconnect from the device.
 
         Clean up and (Linux only) reattach the kernel driver.
@@ -379,15 +382,15 @@ class HidapiDevice:
         self.hidinfo = hidapi_dev_info
         self.hiddev = self.api.device()
 
-    def open(self):
+    def open(self) -> None:
         """Connect to the device."""
         self.hiddev.open_path(self.hidinfo['path'])
 
-    def close(self):
+    def close(self) -> None:
         """NOOP."""
         self.hiddev.close()
 
-    def clear_enqueued_reports(self):
+    def clear_enqueued_reports(self) -> None:
         """Clear already enqueued incoming reports.
 
         The OS generally enqueues incomming reports for open HIDs, and hidapi
@@ -499,7 +502,7 @@ class HidapiDevice:
         return self.hidinfo['serial_number']
 
     @property
-    def bus(self):
+    def bus(self) -> str:
         return 'hid'  # follow Linux model
 
     @property
@@ -507,7 +510,7 @@ class HidapiDevice:
         return self.hidinfo['path'].decode(errors='replace')
 
     @property
-    def port(self):
+    def port(self) -> None:
         return None
 
     def __eq__(self, other):
