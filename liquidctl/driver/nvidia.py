@@ -11,26 +11,28 @@ from liquidctl.driver.smbus import SmbusDriver
 from liquidctl.error import NotSupportedByDevice
 from liquidctl.util import RelaxedNamesEnum, check_unsafe
 
+from typing import List, Dict, Tuple, Final, Union, Optional
+
 _LOGGER = logging.getLogger(__name__)
 
 # vendor, devices
 # FWUPD_GUID = [vendor]:[device] - use hwinfo to inspect
-NVIDIA = 0x10de
-NVIDIA_GTX_1070 = 0x1b81
-NVIDIA_GTX_1080 = 0x1b80
-NVIDIA_RTX_2080_TI_REV_A = 0x1e07
+NVIDIA: Final[int] = 0x10de
+NVIDIA_GTX_1070: Final[int] = 0x1b81
+NVIDIA_GTX_1080: Final[int] = 0x1b80
+NVIDIA_RTX_2080_TI_REV_A: Final[int] = 0x1e07
 # https://www.nv-drivers.eu/nvidia-all-devices.html
 # https://pci-ids.ucw.cz/pci.ids
 
 # subsystem vendor ASUS, subsystem devices
 # PCI_SUBSYS_ID = [subsystem vendor]:[subsystem device] - use hwinfo to inspect
-ASUS = 0x1043
-ASUS_STRIX_GTX_1070 = 0x8599
-ASUS_STRIX_RTX_2080_TI_OC = 0x866a
+ASUS: Final[int] = 0x1043
+ASUS_STRIX_GTX_1070: Final[int] = 0x8599
+ASUS_STRIX_RTX_2080_TI_OC: Final[int] = 0x866a
 
 # subsystem vendor EVGA, subsystem devices
-EVGA = 0x3842
-EVGA_GTX_1080_FTW = 0x6286
+EVGA: Final[int] = 0x3842
+EVGA_GTX_1080_FTW: Final[int] = 0x6286
 
 
 @unique
@@ -48,9 +50,9 @@ class _ModeEnum(bytes, RelaxedNamesEnum):
 class _NvidiaI2CDriver():
     """Generic NVIDIA I²C driver."""
 
-    _VENDOR = None
-    _ADDRESSES = []
-    _MATCHES = []
+    _VENDOR: Optional[int]= None
+    _ADDRESSES: List = []
+    _MATCHES: Union[List, Tuple[Union[int, str]]] = []
 
     @classmethod
     def pre_probe(cls, smbus, vendor=None, product=None, address=None, match=None,
@@ -82,25 +84,25 @@ class _NvidiaI2CDriver():
 class EvgaPascal(SmbusDriver, _NvidiaI2CDriver):
     """NVIDIA series 10 (Pascal) graphics card from EVGA."""
 
-    _REG_MODE = 0x0c
-    _REG_RED = 0x09
-    _REG_GREEN = 0x0a
-    _REG_BLUE = 0x0b
-    _REG_PERSIST = 0x23
-    _PERSIST = 0xe5
+    _REG_MODE: Final[int] = 0x0c
+    _REG_RED: Final[int] = 0x09
+    _REG_GREEN: Final[int] = 0x0a
+    _REG_BLUE: Final[int] = 0x0b
+    _REG_PERSIST: Final[int] = 0x23
+    _PERSIST: Final[int] = 0xe5
 
     _VENDOR = EVGA
-    _ADDRESSES = [0x49]
-    _MATCHES = [
+    _ADDRESSES: List[int] = [0x49]
+    _MATCHES: List[Tuple[int, int, str]] = [
         (NVIDIA_GTX_1080, EVGA_GTX_1080_FTW, 'EVGA GTX 1080 FTW'),
     ]
 
     @unique
     class Mode(_ModeEnum):
-        OFF = (0x00, 0)
-        FIXED = (0x01, 1)
-        RAINBOW = (0x02, 0)
-        BREATHING = (0x05, 1)
+        OFF: Final[Tuple[int, int]] = (0x00, 0)
+        FIXED: Final[Tuple[int, int]] = (0x01, 1)
+        RAINBOW: Final[Tuple[int, int]] = (0x02, 0)
+        BREATHING: Final[Tuple[int, int]] = (0x05, 1)
 
     @classmethod
     def probe(cls, smbus, vendor=None, product=None, address=None, match=None,
@@ -146,7 +148,7 @@ class EvgaPascal(SmbusDriver, _NvidiaI2CDriver):
 
         return status
 
-    def set_color(self, channel, mode, colors, non_volatile=False, **kwargs):
+    def set_color(self, channel, mode, colors, non_volatile=False, **kwargs) -> None:
         """Set the RGB lighting mode and, when applicable, color.
 
         The table bellow summarizes the available channels, modes and their
@@ -199,15 +201,15 @@ class EvgaPascal(SmbusDriver, _NvidiaI2CDriver):
             except OSError as err:
                 _LOGGER.debug('expected OSError when writing to _REG_PERSIST: %s', err)
 
-    def initialize(self, **kwargs):
+    def initialize(self, **kwargs) -> None:
         """Initialize the device."""
         pass
 
-    def set_speed_profile(self, channel, profile, **kwargs):
+    def set_speed_profile(self, channel, profile, **kwargs) -> None:
         """Not supported by this device."""
         raise NotSupportedByDevice()
 
-    def set_fixed_speed(self, channel, duty, **kwargs):
+    def set_fixed_speed(self, channel, duty, **kwargs) -> None:
         """Not supported by this device."""
         raise NotSupportedByDevice()
 
@@ -215,32 +217,32 @@ class EvgaPascal(SmbusDriver, _NvidiaI2CDriver):
 class RogTuring(SmbusDriver, _NvidiaI2CDriver):
     """NVIDIA series 10 (Pascal) or 20 (Turing) graphics card from ASUS."""
 
-    _REG_RED = 0x04
-    _REG_GREEN = 0x05
-    _REG_BLUE = 0x06
-    _REG_MODE = 0x07
-    _REG_APPLY = 0x0e
-    _SYNC_REG = 0x0c  # unused
+    _REG_RED: Final[int] = 0x04
+    _REG_GREEN: Final[int] = 0x05
+    _REG_BLUE: Final[int] = 0x06
+    _REG_MODE: Final[int] = 0x07
+    _REG_APPLY: Final[int] = 0x0e
+    _SYNC_REG: Final[int] = 0x0c  # unused
 
-    _VENDOR = ASUS
-    _ADDRESSES = [0x29, 0x2a, 0x60]
-    _MATCHES = [
+    _VENDOR: Optional[int]= ASUS
+    _ADDRESSES: List[int] = [0x29, 0x2a, 0x60]
+    _MATCHES: Union[List, Tuple[Union[int, str]]] = [
         (NVIDIA_GTX_1070, ASUS_STRIX_GTX_1070,
             'ASUS Strix GTX 1070'),
         (NVIDIA_RTX_2080_TI_REV_A, ASUS_STRIX_RTX_2080_TI_OC,
             'ASUS Strix RTX 2080 Ti OC'),
     ]
 
-    _SENTINEL_ADDRESS = 0xffff  # intentionally invalid
-    _ASUS_GPU_APPLY_VAL = 0x01
+    _SENTINEL_ADDRESS: Final[int] = 0xffff  # intentionally invalid
+    _ASUS_GPU_APPLY_VAL: Final[int] = 0x01
 
     @unique
     class Mode(_ModeEnum):
-        OFF = (0x00, 0)  # not a real mode; fixed is sent with RGB = 0
-        FIXED = (0x01, 1)
-        BREATHING = (0x02, 1)
-        FLASH = (0x03, 1)
-        RAINBOW = (0x04, 0)
+        OFF: Final[Tuple[int, int]] = (0x00, 0)  # not a real mode; fixed is sent with RGB = 0
+        FIXED: Final[Tuple[int, int]] = (0x01, 1)
+        BREATHING: Final[Tuple[int, int]] = (0x02, 1)
+        FLASH: Final[Tuple[int, int]] = (0x03, 1)
+        RAINBOW: Final[Tuple[int, int]] = (0x04, 0)
 
     @classmethod
     def probe(cls, smbus, vendor=None, product=None, address=None, match=None,
@@ -318,7 +320,7 @@ class RogTuring(SmbusDriver, _NvidiaI2CDriver):
 
         return status
 
-    def set_color(self, channel, mode, colors, non_volatile=False, **kwargs):
+    def set_color(self, channel, mode, colors, non_volatile=False, **kwargs) -> None:
         """Set the lighting mode, when applicable, color.
 
         The table bellow summarizes the available channels, modes and their
@@ -379,14 +381,14 @@ class RogTuring(SmbusDriver, _NvidiaI2CDriver):
             self._smbus.write_byte_data(self._address, self._REG_APPLY,
                                         self._ASUS_GPU_APPLY_VAL)
 
-    def initialize(self, **kwargs):
+    def initialize(self, **kwargs) -> None:
         """Initialize the device."""
         pass
 
-    def set_speed_profile(self, channel, profile, **kwargs):
+    def set_speed_profile(self, channel, profile, **kwargs) -> None:
         """Not supported by this device."""
         raise NotSupportedByDevice()
 
-    def set_fixed_speed(self, channel, duty, **kwargs):
+    def set_fixed_speed(self, channel, duty, **kwargs) -> None:
         """Not supported by this device."""
         raise NotSupportedByDevice()
