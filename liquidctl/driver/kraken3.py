@@ -16,7 +16,7 @@ from liquidctl.driver.usb import UsbHidDriver
 from liquidctl.util import normalize_profile, interpolate_profile, clamp, \
                            Hue2Accessory, HUE2_MAX_ACCESSORIES_IN_CHANNEL, \
                            map_direction
-from typing import Dict, List, Final, Tuple, Union
+from typing import Dict, List, Final, Tuple, Union, TYPE_CHECKING
 from liquidctl import custom_types
 
 _LOGGER = logging.getLogger(__name__)
@@ -236,8 +236,12 @@ class KrakenX3(UsbHidDriver):
         cid = self._color_channels[channel]
         _, _, _, mincolors, maxcolors = _COLOR_MODES[mode]
         colors = [[g, r, b] for [r, g, b] in colors]
+        if TYPE_CHECKING:
+            assert mincolors is not None
         if len(colors) < mincolors:
             raise ValueError(f'not enough colors for mode={mode}, at least {mincolors} required')
+        if TYPE_CHECKING:
+            assert mincolors is not None
         elif maxcolors == 0:
             if colors:
                 _LOGGER.warning('too many colors for mode=%s, none needed', mode)
@@ -284,12 +288,17 @@ class KrakenX3(UsbHidDriver):
         padding = [0x0] * (_WRITE_LENGTH - len(data))
         self.device.write(data + padding)
 
-    def _write_colors(self, cid, mode, colors, sval, direction) -> None:
+    def _write_colors(self, cid, mode: str, colors, sval: int, direction) -> None:
         mval, size_variant, speed_scale, mincolors, maxcolors = _COLOR_MODES[mode]
         color_count = len(colors)
 
         if 'super-fixed' == mode or 'super-breathing' == mode:
+            if TYPE_CHECKING:
+                assert maxcolors is not None
             color = list(itertools.chain(*colors)) + [0x00, 0x00, 0x00] * (maxcolors - color_count)
+            if TYPE_CHECKING:
+                assert speed_scale is not None
+                assert speed_scale is not bool
             speed_value = _SPEED_VALUE[speed_scale][sval]
             self._write([0x22, 0x10, cid, 0x00] + color)
             self._write([0x22, 0x11, cid, 0x00])
@@ -304,6 +313,9 @@ class KrakenX3(UsbHidDriver):
             color_lists[1] = [int(x // 2.5) for x in color_lists[0]]
             color_lists[2] = [int(x // 4) for x in color_lists[1]]
             color_lists[3] = [0x00] * 8
+            if TYPE_CHECKING:
+                assert speed_scale is not None
+                assert speed_scale is not bool
             speed_value = _SPEED_VALUE[speed_scale][sval]
             for i in range(8):  # send color scheme first, before enabling wings mode
                 mod = 0x05 if i in [3, 7] else 0x01
@@ -316,7 +328,13 @@ class KrakenX3(UsbHidDriver):
         else:
             opcode = [0x2a, 0x04]
             address = [cid, cid]
+            if TYPE_CHECKING:
+                assert speed_scale is not None
+                assert speed_scale is not bool
             speed_value = _SPEED_VALUE[speed_scale][sval]
+            if TYPE_CHECKING:
+                assert mval is not None
+                assert mval is not bool
             header = opcode + address + [mval] + speed_value
             color = list(itertools.chain(*colors)) + [0, 0, 0] * (16 - color_count)
 
