@@ -37,69 +37,71 @@ SPDX-License-Identifier: GPL-3.0-or-later
 import math
 from enum import IntEnum, IntFlag, unique
 
+from typing import Final
+
 
 @unique
 class WriteBit(IntFlag):
-    WRITE = 0x00
-    READ = 0x01
+    WRITE: Final[int] = 0x00
+    READ: Final[int] = 0x01
 
 
 @unique
 class CommandCode(IntEnum):
     """Incomplete enumeration of the PMBus command codes."""
 
-    PAGE = 0x00
+    PAGE: Final[int] = 0x00
 
-    CLEAR_FAULTS = 0x03
+    CLEAR_FAULTS: Final[int] = 0x03
 
-    PAGE_PLUS_WRITE = 0x05
-    PAGE_PLUS_READ = 0x06
+    PAGE_PLUS_WRITE: Final[int] = 0x05
+    PAGE_PLUS_READ: Final[int] = 0x06
 
-    VOUT_MODE = 0x20
+    VOUT_MODE: Final[int] = 0x20
 
-    FAN_CONFIG_1_2 = 0x3a
-    FAN_COMMAND_1 = 0x3b
-    FAN_COMMAND_2 = 0x3c
-    FAN_CONFIG_3_4 = 0x3d
-    FAN_COMMAND_3 = 0x3e
-    FAN_COMMAND_4 = 0x3f
+    FAN_CONFIG_1_2: Final[int] = 0x3a
+    FAN_COMMAND_1: Final[int] = 0x3b
+    FAN_COMMAND_2: Final[int] = 0x3c
+    FAN_CONFIG_3_4: Final[int] = 0x3d
+    FAN_COMMAND_3: Final[int] = 0x3e
+    FAN_COMMAND_4: Final[int] = 0x3f
 
-    READ_EIN = 0x86
-    READ_EOUT = 0x87
-    READ_VIN = 0x88
-    READ_IIN = 0x89
-    READ_VCAP = 0x8a
-    READ_VOUT = 0x8b
-    READ_IOUT = 0x8c
-    READ_TEMPERATURE_1 = 0x8d
-    READ_TEMPERATURE_2 = 0x8e
-    READ_TEMPERATURE_3 = 0x8f
-    READ_FAN_SPEED_1 = 0x90
-    READ_FAN_SPEED_2 = 0x91
-    READ_FAN_SPEED_3 = 0x92
-    READ_FAN_SPEED_4 = 0x93
-    READ_DUTY_CYCLE = 0x94
-    READ_FREQUENCY = 0x95
-    READ_POUT = 0x96
-    READ_PIN = 0x97
-    READ_PMBUS_REVISON = 0x98
-    MFR_ID = 0x99
-    MFR_MODEL = 0x9a
-    MFR_REVISION = 0x9b
-    MFR_LOCATION = 0x9c
-    MFR_DATE = 0x9d
-    MFR_SERIAL = 0x9e
+    READ_EIN: Final[int] = 0x86
+    READ_EOUT: Final[int] = 0x87
+    READ_VIN: Final[int] = 0x88
+    READ_IIN: Final[int] = 0x89
+    READ_VCAP: Final[int] = 0x8a
+    READ_VOUT: Final[int] = 0x8b
+    READ_IOUT: Final[int] = 0x8c
+    READ_TEMPERATURE_1: Final[int] = 0x8d
+    READ_TEMPERATURE_2: Final[int] = 0x8e
+    READ_TEMPERATURE_3: Final[int] = 0x8f
+    READ_FAN_SPEED_1: Final[int] = 0x90
+    READ_FAN_SPEED_2: Final[int] = 0x91
+    READ_FAN_SPEED_3: Final[int] = 0x92
+    READ_FAN_SPEED_4: Final[int] = 0x93
+    READ_DUTY_CYCLE: Final[int] = 0x94
+    READ_FREQUENCY: Final[int] = 0x95
+    READ_POUT: Final[int] = 0x96
+    READ_PIN: Final[int] = 0x97
+    READ_PMBUS_REVISON: Final[int] = 0x98
+    MFR_ID: Final[int] = 0x99
+    MFR_MODEL: Final[int] = 0x9a
+    MFR_REVISION: Final[int] = 0x9b
+    MFR_LOCATION: Final[int] = 0x9c
+    MFR_DATE: Final[int] = 0x9d
+    MFR_SERIAL: Final[int] = 0x9e
 
-    MFR_SPECIFIC_D1 = 0xd1
-    MFR_SPECIFIC_D2 = 0xd2
-    MFR_SPECIFIC_D8 = 0xd8
-    MFR_SPECIFIC_DC = 0xdc
-    MFR_SPECIFIC_EE = 0xee
-    MFR_SPECIFIC_F0 = 0xf0
-    MFR_SPECIFIC_FC = 0xfc
+    MFR_SPECIFIC_D1: Final[int] = 0xd1
+    MFR_SPECIFIC_D2: Final[int] = 0xd2
+    MFR_SPECIFIC_D8: Final[int] = 0xd8
+    MFR_SPECIFIC_DC: Final[int] = 0xdc
+    MFR_SPECIFIC_EE: Final[int] = 0xee
+    MFR_SPECIFIC_F0: Final[int] = 0xf0
+    MFR_SPECIFIC_FC: Final[int] = 0xfc
 
 
-def linear_to_float(bytes, vout_exp=None):
+def linear_to_float(bytes, vout_exp=None) -> float:
     """Read PMBus LINEAR11 and ULINEAR16 numeric values.
 
     If `vout_exp` is None the value is interpreted as a 2 byte LINEAR11 value.
@@ -133,7 +135,7 @@ def linear_to_float(bytes, vout_exp=None):
     return fra * 2**exp
 
 
-def float_to_linear11(float):
+def float_to_linear11(float) -> bytes:
     """Encode float in PMBus LINEAR11 format.
 
     A LINEAR11 number is a 2 byte value with an 11 bit two's complement
@@ -210,9 +212,9 @@ def _gen_pec_table():
     return tbl
 
 
-_PEC_WIDTH = 8
-_PEC_MSB_MASK = 1 << (_PEC_WIDTH - 1)
-_PEC_MASK = (_PEC_MSB_MASK << 1) - 1
-_PEC_POLY = (0b100000111 & _PEC_MASK)
-_PEC_TBL_LEN = 256
+_PEC_WIDTH: Final[int] = 8
+_PEC_MSB_MASK: Final[int] = 1 << (_PEC_WIDTH - 1) #7
+_PEC_MASK: Final[int] = (_PEC_MSB_MASK << 1) - 1
+_PEC_POLY: Final[int] = (0b100000111 & _PEC_MASK)
+_PEC_TBL_LEN: Final[int] = 256
 _PEC_TBL = None
