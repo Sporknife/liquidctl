@@ -28,23 +28,25 @@ from liquidctl.driver.usb import UsbHidDriver
 from liquidctl.error import NotSupportedByDevice
 from liquidctl.util import clamp, normalize_profile, interpolate_profile, \
                            map_direction
+from typing import Dict, List, Final, Tuple, Union
+from liquidctl import custom_types
 
 _LOGGER = logging.getLogger(__name__)
 
-_SPEED_CHANNELS = {  # (base, minimum duty, maximum duty)
+_SPEED_CHANNELS: Final[Dict[str, Tuple[int, int, int]]] = {  # (base, minimum duty, maximum duty)
     'fan':   (0x80, 25, 100),
     'pump':  (0xc0, 50, 100),
 }
 
-_CRITICAL_TEMPERATURE = 60
+_CRITICAL_TEMPERATURE: Final[int] = 60
 
-_COLOR_CHANNELS = {
+_COLOR_CHANNELS: Final[Dict[str, int]] = {
     'sync':     0x0,
     'logo':     0x1,
     'ring':     0x2,
 }
 
-_COLOR_MODES = {
+_COLOR_MODES: custom_types._ColorModesType = {
     # (byte3/mode, byte2/reverse, byte4/modifier, min colors, max colors, only ring)
     'off':                           (0x00, 0x00, 0x00, 0, 0, False),
     'fixed':                         (0x00, 0x00, 0x00, 1, 1, False),
@@ -68,7 +70,7 @@ _COLOR_MODES = {
     'super-wave':                    (0x0d, 0x00, 0x00, 1, 8, True),  # independent ring leds
 }
 
-_ANIMATION_SPEEDS = {
+_ANIMATION_SPEEDS: Final[Dict[str, int]] = {
     'slowest':  0x0,
     'slower':   0x1,
     'normal':   0x2,
@@ -76,18 +78,18 @@ _ANIMATION_SPEEDS = {
     'fastest':  0x4,
 }
 
-_READ_ENDPOINT = 0x81
-_READ_LENGTH = 64
-_WRITE_ENDPOINT = 0x1
-_WRITE_LENGTH = 65
+_READ_ENDPOINT: Final[int] = 0x81
+_READ_LENGTH: Final[int] = 64
+_WRITE_ENDPOINT: Final[int] = 0x1
+_WRITE_LENGTH: Final[int] = 65
 
 
 class Kraken2(UsbHidDriver):
     """Third generation NZXT Kraken X or M liquid cooler."""
 
-    DEVICE_KRAKENX = 'Kraken X'
-    DEVICE_KRAKENM = 'Kraken M'
-    SUPPORTED_DEVICES = [
+    DEVICE_KRAKENX: Final[str] = 'Kraken X'
+    DEVICE_KRAKENM: Final[str] = 'Kraken M'
+    SUPPORTED_DEVICES: custom_types.SupportedDevicesType = [
         (0x1e71, 0x170e, None, 'NZXT Kraken X (X42, X52, X62 or X72)', {
             'device_type': DEVICE_KRAKENX
         }),
@@ -109,23 +111,23 @@ class Kraken2(UsbHidDriver):
         self._connected = True
         return ret
 
-    def disconnect(self, **kwargs):
+    def disconnect(self, **kwargs) -> None:
         super().disconnect(**kwargs)
         self._connected = False
 
-    def initialize(self, **kwargs):
+    def initialize(self, **kwargs) -> None:
         # before v1.1 `initialize` was used to connect to the device; that has
         # since been deprecated, but we have to support that usage until v2
         if not self._connected:
             self.connect(**kwargs)
 
-    def finalize(self):
+    def finalize(self) -> None:
         """Deprecated."""
         _LOGGER.warning('deprecated: use disconnect() instead')
         if self._connected:
             self.disconnect()
 
-    def get_status(self, **kwargs):
+    def get_status(self, **kwargs) -> List[Tuple[str, Union[float, int, str], str]]:
         """Get a status report.
 
         Returns a list of (key, value, unit) tuples.
@@ -143,7 +145,7 @@ class Kraken2(UsbHidDriver):
                 ('Firmware version', firmware, '')
             ]
 
-    def set_color(self, channel, mode, colors, speed='normal', direction='forward', **kwargs):
+    def set_color(self, channel, mode, colors, speed='normal', direction='forward', **kwargs) -> None:
         """Set the color mode for a specific channel."""
         if not self.supports_lighting:
             raise NotSupportedByDevice()
@@ -197,7 +199,7 @@ class Kraken2(UsbHidDriver):
             steps = [colors]
         return steps
 
-    def set_speed_profile(self, channel, profile, **kwargs):
+    def set_speed_profile(self, channel, profile, **kwargs) -> None:
         """Set channel to use a speed profile."""
         if not self.supports_cooling_profiles:
             raise NotSupportedByDevice()
@@ -214,7 +216,7 @@ class Kraken2(UsbHidDriver):
                          channel, duty, temp)
             self._write([0x2, 0x4d, cbase + i, temp, duty])
 
-    def set_fixed_speed(self, channel, duty, **kwargs):
+    def set_fixed_speed(self, channel, duty, **kwargs) -> None:
         """Set channel to a fixed speed."""
         if not self.supports_cooling:
             raise NotSupportedByDevice()
@@ -223,7 +225,7 @@ class Kraken2(UsbHidDriver):
         else:
             self.set_instantaneous_speed(channel, duty)
 
-    def set_instantaneous_speed(self, channel, duty, **kwargs):
+    def set_instantaneous_speed(self, channel, duty, **kwargs) -> None:
         """Set channel to speed, but do not ensure persistence."""
         if not self.supports_cooling:
             raise NotSupportedByDevice()
@@ -249,7 +251,7 @@ class Kraken2(UsbHidDriver):
         self._firmware_version = (msg[0xb], msg[0xc] << 8 | msg[0xd], msg[0xe])
         return msg
 
-    def _write(self, data):
+    def _write(self, data) -> None:
         padding = [0x0]*(_WRITE_LENGTH - len(data))
         self.device.write(data + padding)
 
