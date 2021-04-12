@@ -106,10 +106,12 @@ from liquidctl.driver.usb import UsbHidDriver
 from liquidctl.error import NotSupportedByDevice
 from liquidctl.util import clamp, map_direction, Hue2Accessory, \
                            HUE2_MAX_ACCESSORIES_IN_CHANNEL
+from typing import Dict, Final
+from liquidctl import custom_types
 
 _LOGGER = logging.getLogger(__name__)
 
-_ANIMATION_SPEEDS = {
+_ANIMATION_SPEEDS: Final[Dict[str, int]] = {
     'slowest':  0x0,
     'slower':   0x1,
     'normal':   0x2,
@@ -117,8 +119,8 @@ _ANIMATION_SPEEDS = {
     'fastest':  0x4,
 }
 
-_MIN_DUTY = 0
-_MAX_DUTY = 100
+_MIN_DUTY: Final[int] = 0
+_MAX_DUTY: Final[int] = 100
 
 
 class _CommonSmartDeviceDriver(UsbHidDriver):
@@ -130,7 +132,7 @@ class _CommonSmartDeviceDriver(UsbHidDriver):
         self._speed_channels = speed_channels
         self._color_channels = color_channels
 
-    def set_color(self, channel, mode, colors, speed='normal', direction='forward', **kwargs):
+    def set_color(self, channel, mode, colors, speed='normal', direction='forward', **kwargs) -> None:
         """Set the color mode.
 
         Only supported by Smart Device V1/V2 and HUE 2 controllers.
@@ -161,7 +163,7 @@ class _CommonSmartDeviceDriver(UsbHidDriver):
         sval = _ANIMATION_SPEEDS[speed]
         self._write_colors(cid, mode, colors, sval, direction)
 
-    def set_fixed_speed(self, channel, duty, **kwargs):
+    def set_fixed_speed(self, channel, duty, **kwargs) -> None:
         """Set channel to a fixed speed."""
         if channel == 'sync':
             selected_channels = self._speed_channels
@@ -172,25 +174,25 @@ class _CommonSmartDeviceDriver(UsbHidDriver):
             _LOGGER.info('setting %s duty to %d%%', cname, duty)
             self._write_fixed_duty(cid, duty)
 
-    def set_speed_profile(self, channel, profile, **kwargs):
+    def set_speed_profile(self, channel, profile, **kwargs) -> None:
         """Not Supported by this device."""
         raise NotSupportedByDevice()
 
-    def _write(self, data):
+    def _write(self, data) -> None:
         padding = [0x0]*(self._WRITE_LENGTH - len(data))
         self.device.write(data + padding)
 
-    def _write_colors(self, cid, mode, colors, sval, direction):
+    def _write_colors(self, cid, mode, colors, sval, direction) -> None:
         raise NotImplementedError()
 
-    def _write_fixed_duty(self, cid, duty):
+    def _write_fixed_duty(self, cid, duty) -> None:
         raise NotImplementedError()
 
 
 class SmartDevice(_CommonSmartDeviceDriver):
     """NZXT Smart Device (V1) or Grid+ V3."""
 
-    SUPPORTED_DEVICES = [
+    SUPPORTED_DEVICES: custom_types.SupportedDevicesType = [
         (0x1e71, 0x1714, None, 'NZXT Smart Device (V1)', {
             'speed_channel_count': 3,
             'color_channel_count': 1
@@ -204,7 +206,7 @@ class SmartDevice(_CommonSmartDeviceDriver):
     _READ_LENGTH = 21
     _WRITE_LENGTH = 65
 
-    _COLOR_MODES = {
+    _COLOR_MODES: custom_types._ColorModesType = {
         # (byte2/mode, byte3/variant, byte4/size, min colors, max colors)
         'off':                           (0x00, 0x00, 0x00, 0, 0),
         'fixed':                         (0x00, 0x00, 0x00, 1, 1),
@@ -244,7 +246,7 @@ class SmartDevice(_CommonSmartDeviceDriver):
                           for i in range(color_channel_count)}
         super().__init__(device, description, speed_channels, color_channels, **kwargs)
 
-    def initialize(self, **kwargs):
+    def initialize(self, **kwargs) -> None:
         """Initialize the device.
 
         Detects all connected fans and LED accessories, and allows subsequent
@@ -312,7 +314,7 @@ class SmartDevice(_CommonSmartDeviceDriver):
 class SmartDevice2(_CommonSmartDeviceDriver):
     """NZXT HUE 2 lighting and, optionally, fan controller."""
 
-    SUPPORTED_DEVICES = [
+    SUPPORTED_DEVICES: custom_types.SupportedDevicesType = [
         (0x1e71, 0x2006, None, 'NZXT Smart Device V2', {
             'speed_channel_count': 3,
             'color_channel_count': 2
@@ -335,11 +337,11 @@ class SmartDevice2(_CommonSmartDeviceDriver):
         }),
     ]
 
-    _MAX_READ_ATTEMPTS = 12
-    _READ_LENGTH = 64
-    _WRITE_LENGTH = 64
+    _MAX_READ_ATTEMPTS: Final[int] = 12
+    _READ_LENGTH: Final[int] = 64
+    _WRITE_LENGTH: Final[int] = 64
 
-    _COLOR_MODES = {
+    _COLOR_MODES: custom_types._ColorModesType = {
         # (mode, size/variant, moving, min colors, max colors)
         'off':                              (0x00, 0x00, 0x00, 0, 0),
         'fixed':                            (0x00, 0x00, 0x00, 1, 1),
@@ -456,7 +458,7 @@ class SmartDevice2(_CommonSmartDeviceDriver):
         self._read_until({b'\x67\x02': parse_fan_info})
         return sorted(status)
 
-    def _read_until(self, parsers):
+    def _read_until(self, parsers) -> None:
         for _ in range(self._MAX_READ_ATTEMPTS):
             msg = self.device.read(self._READ_LENGTH)
             prefix = bytes(msg[0:2])
@@ -467,7 +469,7 @@ class SmartDevice2(_CommonSmartDeviceDriver):
                 return
         assert False, f'missing messages (attempts={self._MAX_READ_ATTEMPTS}, missing={len(parsers)})'
 
-    def _write_colors(self, cid, mode, colors, sval, direction='forward',):
+    def _write_colors(self, cid, mode, colors, sval, direction='forward',) -> None:
         mval, mod3, movingFlag, mincolors, maxcolors = self._COLOR_MODES[mode]
 
         color_count = len(colors)
@@ -502,7 +504,7 @@ class SmartDevice2(_CommonSmartDeviceDriver):
             header = [0x28, 0x03, cid, 0x00, mval, sval, byte7, byte8, byte9, byte10]
             self._write(header + list(itertools.chain(*colors)))
 
-    def _write_fixed_duty(self, cid, duty):
+    def _write_fixed_duty(self, cid, duty) -> None:
         msg = [0x62, 0x01, 0x01 << cid, 0x00, 0x00, 0x00]  # fan channel passed as bitflag in last 3 bits of 3rd byte
         msg[cid + 3] = duty  # duty percent in 4th, 5th, and 6th bytes for, respectively, fan1, fan2 and fan3
         self._write(msg)
