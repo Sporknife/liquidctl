@@ -36,9 +36,11 @@ from liquidctl.driver import smart_device
 if sys.platform == 'linux':
     from liquidctl.driver import ddr4
     from liquidctl.driver import nvidia
+from typing import Optional
+from liquidctl import custom_types
 
 
-def find_liquidctl_devices(pick=None, **kwargs):
+def find_liquidctl_devices(pick: Optional[int]=None, **kwargs):
     """Find devices and instantiate corresponding liquidctl drivers.
 
     Probes all buses and drivers that have been loaded at the time of the call
@@ -53,7 +55,7 @@ def find_liquidctl_devices(pick=None, **kwargs):
     """
     buses = sorted(find_all_subclasses(BaseBus),
                    key=lambda x: (x.__module__, x.__name__))
-    num = 0
+    num: int = 0
     for bus_cls in buses:
         for dev in bus_cls().find_devices(**kwargs):
             if pick is not None:
@@ -67,6 +69,7 @@ def find_liquidctl_devices(pick=None, **kwargs):
 
 __all__ = [
     'find_liquidctl_devices',
+    'types'
 ]
 
 # allow old driver imports to continue to work by manually placing these into
