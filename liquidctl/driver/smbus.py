@@ -15,6 +15,8 @@ from pathlib import Path
 from liquidctl.driver.base import BaseDriver, BaseBus, find_all_subclasses
 from liquidctl.util import check_unsafe, LazyHexRepr
 
+from typing import Optional
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -94,7 +96,7 @@ if sys.platform == 'linux':
             for drv in drivers:
                 yield from drv.probe(self, **kwargs)
 
-        def open(self):
+        def open(self) -> None:
             """Open the I²C bus."""
             if not self._smbus:
                 try:
@@ -154,7 +156,7 @@ if sys.platform == 'linux':
                           address, register, LazyHexRepr(data))
             return self._smbus.write_block_data(address, register, data)
 
-        def close(self):
+        def close(self) -> None:
             """Close the I²C connection."""
             if self._smbus:
                 self._smbus.close()
@@ -240,7 +242,7 @@ class SmbusDriver(BaseDriver):
     """Base driver class for SMBus devices."""
 
     @classmethod
-    def probe(cls, smbus, **kwargs):
+    def probe(cls, smbus, **kwargs) -> None:
         raise NotImplementedError()
 
     @classmethod
@@ -287,7 +289,7 @@ class SmbusDriver(BaseDriver):
             _LOGGER.debug("SMBus is disabled, missing unsafe feature 'smbus'")
         return self
 
-    def disconnect(self, **kwargs):
+    def disconnect(self, **kwargs) -> None:
         """Disconnect from the device."""
         self._smbus.close()
 
@@ -307,7 +309,7 @@ class SmbusDriver(BaseDriver):
         return self._product_id
 
     @property
-    def release_number(self):
+    def release_number(self) -> None:
         """Device versioning number, or None if N/A.
 
         In USB devices this is bcdDevice.
@@ -315,7 +317,7 @@ class SmbusDriver(BaseDriver):
         return None
 
     @property
-    def serial_number(self):
+    def serial_number(self) -> None:
         """Serial number reported by the device, or None if N/A."""
         return None
 
@@ -325,11 +327,11 @@ class SmbusDriver(BaseDriver):
         return self._smbus.name
 
     @property
-    def address(self):
+    def address(self) -> Optional[str]:
         """Address of the device on the corresponding bus, or None if N/A."""
         return f'{self._address:#04x}'
 
     @property
-    def port(self):
+    def port(self) -> None:
         """Physical location of the device, or None if N/A."""
         return None
