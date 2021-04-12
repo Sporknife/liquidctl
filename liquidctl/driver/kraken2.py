@@ -28,7 +28,7 @@ from liquidctl.driver.usb import UsbHidDriver
 from liquidctl.error import NotSupportedByDevice
 from liquidctl.util import clamp, normalize_profile, interpolate_profile, \
                            map_direction
-from typing import Dict, List, Final, Tuple, Union
+from typing import Dict, List, Final, Tuple, Union, TYPE_CHECKING
 from liquidctl import custom_types
 
 _LOGGER = logging.getLogger(__name__)
@@ -168,9 +168,14 @@ class Kraken2(UsbHidDriver):
 
         steps = self._generate_steps(colors, mincolors, maxcolors, mode, ringonly)
         sval = _ANIMATION_SPEEDS[speed]
+        if TYPE_CHECKING:
+            assert mod2 is not None
+            #assert speed_scale is not bool
         byte2 = mod2 | _COLOR_CHANNELS[channel]
         for i, leds in enumerate(steps):
             seq = i << 5
+            if TYPE_CHECKING:
+                assert mod4 is not None
             byte4 = sval | seq | mod4
             logo = [leds[0][1], leds[0][0], leds[0][2]]
             ring = list(itertools.chain(*leds[1:]))
