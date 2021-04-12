@@ -25,21 +25,24 @@ from liquidctl.pmbus import CommandCode as CMD
 from liquidctl.pmbus import WriteBit, linear_to_float
 from liquidctl.util import clamp
 
+from typing import Dict, Final, Union, Tuple, Optional
+from liquidctl import custom_types
+
 _LOGGER = logging.getLogger(__name__)
 
-_REPORT_LENGTH = 64
-_SLAVE_ADDRESS = 0x02
-_CORSAIR_READ_TOTAL_UPTIME = CMD.MFR_SPECIFIC_D1
-_CORSAIR_READ_UPTIME = CMD.MFR_SPECIFIC_D2
-_CORSAIR_12V_OCP_MODE = CMD.MFR_SPECIFIC_D8
-_CORSAIR_READ_OUTPUT_POWER = CMD.MFR_SPECIFIC_EE
-_CORSAIR_FAN_CONTROL_MODE = CMD.MFR_SPECIFIC_F0
+_REPORT_LENGTH: Final[int] = 64
+_SLAVE_ADDRESS: Final[int] = 0x02
+_CORSAIR_READ_TOTAL_UPTIME: Final[int] = CMD.MFR_SPECIFIC_D1
+_CORSAIR_READ_UPTIME: Final[int] = CMD.MFR_SPECIFIC_D2
+_CORSAIR_12V_OCP_MODE: Final[int] = CMD.MFR_SPECIFIC_D8
+_CORSAIR_READ_OUTPUT_POWER: Final[int] = CMD.MFR_SPECIFIC_EE
+_CORSAIR_FAN_CONTROL_MODE: Final[int] = CMD.MFR_SPECIFIC_F0
 
-_RAIL_12V = 0x0
-_RAIL_5V = 0x1
-_RAIL_3P3V = 0x2
-_RAIL_NAMES = {_RAIL_12V: '+12V', _RAIL_5V: '+5V', _RAIL_3P3V: '+3.3V'}
-_MIN_FAN_DUTY = 0
+_RAIL_12V: Final[int] = 0x0
+_RAIL_5V: Final[int] = 0x1
+_RAIL_3P3V: Final[int] = 0x2
+_RAIL_NAMES: Dict[int, str] = {_RAIL_12V: '+12V', _RAIL_5V: '+5V', _RAIL_3P3V: '+3.3V'}
+_MIN_FAN_DUTY: Final[int] = 0
 
 
 class OCPMode(Enum):
