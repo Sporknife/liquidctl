@@ -3,6 +3,7 @@
 Copyright (C) 2018–2019  Jonas Malaco and contributors
 SPDX-License-Identifier: GPL-3.0-or-later
 """
+from typing import Dict, Final, Tuple, Optional, List, Union
 
 class BaseDriver:
     """Base driver API.
@@ -24,14 +25,14 @@ class BaseDriver:
     """
 
     @classmethod
-    def find_supported_devices(cls, **kwargs):
+    def find_supported_devices(cls, **kwargs) -> None:
         """Find and bind to compatible devices.
 
         Returns a list of bound driver instances.
         """
         raise NotImplementedError()
 
-    def connect(self, **kwargs):
+    def connect(self, **kwargs) -> None:
         """Connect to the device.
 
         Procedure before any read or write operation can be performed.
@@ -41,7 +42,7 @@ class BaseDriver:
         """
         raise NotImplementedError()
 
-    def initialize(self, **kwargs):
+    def initialize(self, **kwargs) -> None:
         """Initialize the device.
 
         Apart from `connect()`, some devices might require a onetime
@@ -53,7 +54,7 @@ class BaseDriver:
         """
         raise NotImplementedError()
 
-    def disconnect(self, **kwargs):
+    def disconnect(self, **kwargs) -> None:
         """Disconnect from the device.
 
         Procedure before the driver can safely unbind from the device.
@@ -61,42 +62,42 @@ class BaseDriver:
         """
         raise NotImplementedError()
 
-    def get_status(self, **kwargs):
+    def get_status(self, **kwargs) -> Optional[Union[List, List[Tuple[Union[str, int]]]]]:
         """Get a status report.
 
         Returns a list of `(property, value, unit)` tuples.
         """
         raise NotImplementedError()
 
-    def set_color(self, channel, mode, colors, **kwargs):
+    def set_color(self, channel, mode, colors, **kwargs) -> None:
         """Set the color mode for a specific channel."""
         raise NotImplementedError()
 
-    def set_speed_profile(self, channel, profile, **kwargs):
+    def set_speed_profile(self, channel, profile, **kwargs) -> None:
         """Set channel to follow a speed duty profile."""
         raise NotImplementedError()
 
-    def set_fixed_speed(self, channel, duty, **kwargs):
+    def set_fixed_speed(self, channel, duty, **kwargs) -> None:
         """Set channel to a fixed speed duty."""
         raise NotImplementedError()
 
     @property
-    def description(self):
+    def description(self) -> Optional[str]:
         """Human readable description of the corresponding device."""
         raise NotImplementedError()
 
     @property
-    def vendor_id(self):
+    def vendor_id(self) -> None:
         """Numeric vendor identifier, or None if N/A."""
         raise NotImplementedError()
 
     @property
-    def product_id(self):
+    def product_id(self) -> None:
         """Numeric product identifier, or None if N/A."""
         raise NotImplementedError()
 
     @property
-    def release_number(self):
+    def release_number(self) -> None:
         """Device versioning number, or None if N/A.
 
         In USB devices this is bcdDevice.
@@ -104,17 +105,17 @@ class BaseDriver:
         raise NotImplementedError()
 
     @property
-    def serial_number(self):
+    def serial_number(self) -> None:
         """Serial number reported by the device, or None if N/A."""
         raise NotImplementedError()
 
     @property
-    def bus(self):
+    def bus(self) -> None:
         """Bus the device is connected to, or None if N/A."""
         raise NotImplementedError()
 
     @property
-    def address(self):
+    def address(self) -> Optional[str]:
         """Address of the device on the corresponding bus, or None if N/A.
 
         This typically depends on the bus enumeration order.
@@ -122,7 +123,7 @@ class BaseDriver:
         raise NotImplementedError()
 
     @property
-    def port(self):
+    def port(self) -> None:
         """Physical location of the device, or None if N/A.
 
         This typically refers to a USB port, which is *not* dependent on bus
@@ -135,14 +136,14 @@ class BaseDriver:
     def __enter__(self):
         return self
 
-    def __exit__(self, *args):
+    def __exit__(self, *args) -> None:
         self.disconnect()
 
 
 class BaseBus:
     """Base bus API."""
 
-    def find_devices(self, **kwargs):
+    def find_devices(self, **kwargs) -> None:
         """Find compatible devices and yield corresponding driver instances."""
         return
 
