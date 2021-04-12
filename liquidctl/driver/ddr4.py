@@ -13,6 +13,9 @@ from liquidctl.driver.smbus import SmbusDriver
 from liquidctl.error import ExpectationNotMet, NotSupportedByDevice, NotSupportedByDriver
 from liquidctl.util import RelaxedNamesEnum, check_unsafe, clamp
 
+from typing import Dict, Final, Tuple, Optional, List, Union
+from liquidctl import custom_types
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -25,27 +28,27 @@ class Ddr4Spd:
 
     class DramDeviceType(Enum):
         """DRAM device type (not exhaustive)."""
-        DDR4_SDRAM = 0x0c
-        LPDDR4_SDRAM = 0x10
-        LPDDR4X_SDRAM = 0x11
+        DDR4_SDRAM: Final[int] = 0x0c
+        LPDDR4_SDRAM: Final[int] = 0x10
+        LPDDR4X_SDRAM: Final[int] = 0x11
 
-        def __str__(self):
+        def __str__(self) -> str:
             return self.name.replace('_', ' ')
 
     class BaseModuleType(Enum):
         """Base module type (not exhaustive)."""
 
-        RDIMM = 0b0001
-        UDIMM = 0b0010
-        SO_DIMM = 0b0011
-        LRDIMM = 0x0100
+        RDIMM: Final[int] = 0b0001
+        UDIMM: Final[int] = 0b0010
+        SO_DIMM: Final[int] = 0b0011
+        LRDIMM: Final[int] = 0x0100
 
-        def __str__(self):
+        def __str__(self) -> str:
             return self.name.replace('_', ' ')
 
     # Standard Manufacturer's Identification Code from JEDEC JEP106;
     # (not exhaustive) maps banks and IDs to names: _JEP106[<bank>][id]
-    _JEP106 = {
+    _JEP106: Final[Dict[int, Dict[int, str]]] = {
         1: {
             0x2c: 'Micron',
             0xad: 'SK Hynix',
@@ -72,13 +75,13 @@ class Ddr4Spd:
             raise ValueError('not a DDR4 SPD EEPROM')
 
     @property
-    def spd_bytes_used(self):
+    def spd_bytes_used(self) -> int:
         nibble = self._eeprom[0x00] & 0x0f
         assert nibble <= 0b0100, 'reserved'
         return nibble * 128
 
     @property
-    def spd_bytes_total(self):
+    def spd_bytes_total(self) -> int:
         nibble = (self._eeprom[0x00] >> 4) & 0b111
         assert nibble <= 0b010, 'reserved'
         return nibble * 256
@@ -125,13 +128,13 @@ class Ddr4Spd:
 class Ddr4Temperature(SmbusDriver):
     """DDR4 module with TSE2004-compatible SPD EEPROM and temperature sensor."""
 
-    _SPD_DTIC = 0x50
-    _TS_DTIC = 0x18
-    _SA_MASK = 0b111
-    _REG_CAPABILITIES = 0x00
-    _REG_TEMPERATURE = 0x05
+    _SPD_DTIC: Final[int] = 0x50
+    _TS_DTIC: Final[int] = 0x18
+    _SA_MASK: Final[int] = 0b111
+    _REG_CAPABILITIES: Final[int] = 0x00
+    _REG_TEMPERATURE: Final[int] = 0x05
 
-    _UNSAFE = ['smbus', 'ddr4_temperature']
+    _UNSAFE: List[str] = ['smbus', 'ddr4_temperature']
 
     @classmethod
     def probe(cls, smbus, vendor=None, product=None, address=None, match=None,
@@ -181,7 +184,7 @@ class Ddr4Temperature(SmbusDriver):
             yield dev
 
     @classmethod
-    def _match(cls, spd):
+    def _match(cls, spd) -> Optional[str]:
         if not spd.module_thermal_sensor:
             return None
 
@@ -195,15 +198,15 @@ class Ddr4Temperature(SmbusDriver):
         else:
             return manufacturer
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self._ts_address = self._TS_DTIC | (self._address[2] & self._SA_MASK)
 
     @property
-    def address(self):
+    def address(self) -> Optional[str]:
         return f'{self._address[2]:#04x}'
 
-    def get_status(self, **kwargs):
+    def get_status(self, **kwargs) -> Optional[Union[List, List[Tuple[Union[str, int]]]]]:
         """Get a status report.
 
         Returns a list of `(property, value, unit)` tuples.
@@ -233,19 +236,19 @@ class Ddr4Temperature(SmbusDriver):
     def _read_temperature_register(self):
         return self._smbus.read_block_data(self._ts_address, self._REG_TEMPERATURE)
 
-    def initialize(self, **kwargs):
+    def initialize(self, **kwargs) -> None:
         """Initialize the device."""
         pass
 
-    def set_color(self, channel, mode, colors, **kwargs):
+    def set_color(self, channel, mode, colors, **kwargs) -> None:
         """Not supported by this driver."""
         raise NotSupportedByDriver()
 
-    def set_speed_profile(self, channel, profile, **kwargs):
+    def set_speed_profile(self, channel, profile, **kwargs) -> None:
         """Not supported by this device."""
         raise NotSupportedByDevice()
 
-    def set_fixed_speed(self, channel, duty, **kwargs):
+    def set_fixed_speed(self, channel, duty, **kwargs) -> None:
         """Not supported by this device."""
         raise NotSupportedByDevice()
 
@@ -253,15 +256,15 @@ class Ddr4Temperature(SmbusDriver):
 class VengeanceRgb(Ddr4Temperature):
     """Corsair Vengeance RGB DDR4 module."""
 
-    _RGB_DTIC = 0x58
-    _REG_RGB_TIMING1 = 0xa4
-    _REG_RGB_TIMING2 = 0xa5
-    _REG_RGB_MODE = 0xa6
-    _REG_RGB_COLOR_COUNT = 0xa7
-    _REG_RGB_COLOR_START = 0xb0
-    _REG_RGB_COLOR_END = 0xc5
+    _RGB_DTIC: Final[int] = 0x58
+    _REG_RGB_TIMING1: Final[int] = 0xa4
+    _REG_RGB_TIMING2: Final[int] = 0xa5
+    _REG_RGB_MODE: Final[int] = 0xa6
+    _REG_RGB_COLOR_COUNT: Final[int] = 0xa7
+    _REG_RGB_COLOR_START: Final[int] = 0xb0
+    _REG_RGB_COLOR_END: Final[int] = 0xc5
 
-    _UNSAFE = ['smbus', 'vengeance_rgb']
+    _UNSAFE: List[str] = ['smbus', 'vengeance_rgb']
 
     @unique
     class Mode(bytes, RelaxedNamesEnum):
@@ -272,29 +275,29 @@ class VengeanceRgb(Ddr4Temperature):
             obj.max_colors = max_colors
             return obj
 
-        FIXED = (0x00, 1, 1)
-        FADING = (0x01, 2, 7)
-        BREATHING = (0x02, 1, 7)
+        FIXED: Final[Tuple[int, int, int]] = (0x00, 1, 1)
+        FADING: Final[Tuple[int, int, int]] = (0x01, 2, 7)
+        BREATHING: Final[Tuple[int, int, int]] = (0x02, 1, 7)
 
-        OFF = (0xf0, 0, 0)  # pseudo mode, equivalent to fixed #000000
+        OFF: Final[Tuple[int, int, int]] = (0xf0, 0, 0)  # pseudo mode, equivalent to fixed #000000
 
-        def __str__(self):
+        def __str__(self) -> str:
             return self.name.lower()
 
     @unique
     class SpeedTimings(RelaxedNamesEnum):
-        SLOWEST = 63
-        SLOWER = 48
-        NORMAL = 32
-        FASTER = 16
-        FASTEST = 1
+        SLOWEST: Final[int] = 63
+        SLOWER: Final[int] = 48
+        NORMAL: Final[int] = 32
+        FASTER: Final[int] = 16
+        FASTEST: Final[int] = 1
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self._rgb_address = None
 
     @classmethod
-    def _match(cls, spd):
+    def _match(cls, spd) -> Optional[str]:
         if spd.module_type != (Ddr4Spd.BaseModuleType.UDIMM, None) \
                 or spd.module_manufacturer != 'Corsair' \
                 or not spd.module_part_number.startswith('CMR'):
@@ -312,7 +315,7 @@ class VengeanceRgb(Ddr4Temperature):
         return ((treg & 0xff) << 8) | (treg >> 8)
 
     def set_color(self, channel, mode, colors, speed='normal',
-                  transition_ticks=None, stable_ticks=None, **kwargs):
+                  transition_ticks=None, stable_ticks=None, **kwargs) -> None:
         """Set the RGB lighting mode and, when applicable, color.
 
         The table bellow summarizes the available channels, modes and their
@@ -389,7 +392,7 @@ class VengeanceRgb(Ddr4Temperature):
         else:
             rgb_write(self._REG_RGB_MODE, mode.value)
 
-    def _compute_rgb_address(self):
+    def _compute_rgb_address(self) -> None:
         if self._rgb_address:
             return
 
