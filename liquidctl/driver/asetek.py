@@ -25,59 +25,62 @@ from liquidctl.error import NotSupportedByDevice
 from liquidctl.keyval import RuntimeStorage
 from liquidctl.util import clamp
 
+from typing import Final, List, Dict, Tuple, Union, Any
+from liquidctl import custom_types
+
 _LOGGER = logging.getLogger(__name__)
 
-_CMD_RUNTIME = 0x10
-_CMD_PROFILE = 0x11
-_CMD_OVERRIDE = 0x12
-_CMD_PUMP_PWM = 0x13
-_CMD_LUID = 0x14
-_CMD_READ_ONLY_RUNTIME = 0x20
-_CMD_STORE_SETTINGS = 0x21
-_CMD_EXTERNAL_TEMPERATURE = 0x22
+_CMD_RUNTIME: Final[int] = 0x10
+_CMD_PROFILE: Final[int] = 0x11
+_CMD_OVERRIDE: Final[int] = 0x12
+_CMD_PUMP_PWM: Final[int] = 0x13
+_CMD_LUID: Final[int] = 0x14
+_CMD_READ_ONLY_RUNTIME: Final[int] = 0x20
+_CMD_STORE_SETTINGS: Final[int] = 0x21
+_CMD_EXTERNAL_TEMPERATURE: Final[int] = 0x22
 
-_FIXED_SPEED_CHANNELS = {    # (message type, minimum duty, maximum duty)
+_FIXED_SPEED_CHANNELS: Final[Dict[str, Tuple[int, int, int]]] = {    # (message type, minimum duty, maximum duty)
     'pump':  (_CMD_PUMP_PWM, 50, 100),  # min/max must correspond to _MIN/MAX_PUMP_SPEED_CODE
 }
-_VARIABLE_SPEED_CHANNELS = {  # (message type, minimum duty, maximum duty)
+_VARIABLE_SPEED_CHANNELS: Final[Dict[str, Tuple[int, int, int]]] = {  # (message type, minimum duty, maximum duty)
     'fan':   (_CMD_PROFILE, 0, 100)
 }
-_MAX_PROFILE_POINTS = 6
-_CRITICAL_TEMPERATURE = 60
-_HIGH_TEMPERATURE = 45
-_MIN_PUMP_SPEED_CODE = 0x32
-_MAX_PUMP_SPEED_CODE = 0x42
-_READ_ENDPOINT = 0x82
-_READ_LENGTH = 32
-_READ_TIMEOUT = 2000
-_WRITE_ENDPOINT = 0x2
-_WRITE_TIMEOUT = 2000
+_MAX_PROFILE_POINTS: Final[int] = 6
+_CRITICAL_TEMPERATURE: Final[int] = 60
+_HIGH_TEMPERATURE: Final[int] = 45
+_MIN_PUMP_SPEED_CODE: Final[int] = 0x32
+_MAX_PUMP_SPEED_CODE: Final[int] = 0x42
+_READ_ENDPOINT: Final[int] = 0x82
+_READ_LENGTH: Final[int] = 32
+_READ_TIMEOUT: Final[int] = 2000
+_WRITE_ENDPOINT: Final[int] = 0x2
+_WRITE_TIMEOUT: Final[int] = 2000
 
-_LEGACY_FIXED_SPEED_CHANNELS = {    # (message type, minimum duty, maximum duty)
+_LEGACY_FIXED_SPEED_CHANNELS: Final[Dict[str, Tuple[int, int, int]]] = {    # (message type, minimum duty, maximum duty)
     'fan':  (_CMD_OVERRIDE, 0, 100),
     'pump':  (_CMD_PUMP_PWM, 50, 100),
 }
 
 # USBXpress specific control parameters; from the USBXpress SDK
 # (Customization/CP21xx_Customization/AN721SW_Linux/silabs_usb.h)
-_USBXPRESS_REQUEST = 0x02
-_USBXPRESS_FLUSH_BUFFERS = 0x01
-_USBXPRESS_CLEAR_TO_SEND = 0x02
-_USBXPRESS_NOT_CLEAR_TO_SEND = 0x04
-_USBXPRESS_GET_PART_NUM = 0x08
+_USBXPRESS_REQUEST: Final[int] = 0x02
+_USBXPRESS_FLUSH_BUFFERS: Final[int] = 0x01
+_USBXPRESS_CLEAR_TO_SEND: Final[int] = 0x02
+_USBXPRESS_NOT_CLEAR_TO_SEND: Final[int] = 0x04
+_USBXPRESS_GET_PART_NUM: Final[int] = 0x08
 
 # Unknown control parameters; from Craig's libSiUSBXp and OpenCorsairLink
-_UNKNOWN_OPEN_REQUEST = 0x00
-_UNKNOWN_OPEN_VALUE = 0xffff
+_UNKNOWN_OPEN_REQUEST: Final[int] = 0x00
+_UNKNOWN_OPEN_VALUE: Final[int] = 0xffff
 
 # Control request type
-_USBXPRESS = usb.util.CTRL_OUT | usb.util.CTRL_TYPE_VENDOR | usb.util.CTRL_RECIPIENT_DEVICE
+_USBXPRESS: Final[int] = usb.util.CTRL_OUT | usb.util.CTRL_TYPE_VENDOR | usb.util.CTRL_RECIPIENT_DEVICE
 
 
 class _CommonAsetekDriver(UsbDriver):
     """Common methods for Asetek 690LC devices."""
 
-    def _configure_flow_control(self, clear_to_send):
+    def _configure_flow_control(self, clear_to_send) -> None:
         """Set the software clear-to-send flow control policy for device."""
         _LOGGER.debug('set clear to send = %s', clear_to_send)
         if clear_to_send:
@@ -85,13 +88,13 @@ class _CommonAsetekDriver(UsbDriver):
         else:
             self.device.ctrl_transfer(_USBXPRESS, _USBXPRESS_REQUEST, _USBXPRESS_NOT_CLEAR_TO_SEND)
 
-    def _begin_transaction(self):
+    def _begin_transaction(self) -> None:
         """Begin a new transaction before writing to the device."""
         _LOGGER.debug('begin transaction')
         self.device.claim()
         self.device.ctrl_transfer(_USBXPRESS, _USBXPRESS_REQUEST, _USBXPRESS_FLUSH_BUFFERS)
 
-    def _write(self, data):
+    def _write(self, data) -> None:
         self.device.write(_WRITE_ENDPOINT, data, _WRITE_TIMEOUT)
 
     def _end_transaction_and_read(self):
@@ -110,7 +113,7 @@ class _CommonAsetekDriver(UsbDriver):
 
     def _configure_device(self, color1=[0, 0, 0], color2=[0, 0, 0], color3=[255, 0, 0],
                           alert_temp=_HIGH_TEMPERATURE, interval1=0, interval2=0,
-                          blackout=False, fading=False, blinking=False, enable_alert=True):
+                          blackout=False, fading=False, blinking=False, enable_alert=True) -> None:
         self._write([0x10] + color1 + color2 + color3
                     + [alert_temp, interval1, interval2, not blackout, fading,
                        blinking, enable_alert, 0x00, 0x01])
@@ -146,13 +149,13 @@ class _CommonAsetekDriver(UsbDriver):
         self._configure_flow_control(clear_to_send=True)
         return ret
 
-    def initialize(self, **kwargs):
+    def initialize(self, **kwargs) -> None:
         """Initialize the device."""
         self._begin_transaction()
         self._configure_device()
         self._end_transaction_and_read()
 
-    def disconnect(self, **kwargs):
+    def disconnect(self, **kwargs) -> None:
         """Disconnect from the device.
 
         Implementation note: unlike SI_Close is supposed to do,¹ do not send
@@ -172,7 +175,7 @@ class _CommonAsetekDriver(UsbDriver):
 class Modern690Lc(_CommonAsetekDriver):
     """Modern fifth generation Asetek 690LC cooler."""
 
-    SUPPORTED_DEVICES = [
+    SUPPORTED_DEVICES: custom_types.SupportedDevicesType = [
         (0x2433, 0xb200, None, 'Asetek 690LC (assuming EVGA CLC)', {}),
     ]
 
@@ -300,7 +303,7 @@ class Modern690Lc(_CommonAsetekDriver):
 class Legacy690Lc(_CommonAsetekDriver):
     """Legacy fifth generation Asetek 690LC cooler."""
 
-    SUPPORTED_DEVICES = [
+    SUPPORTED_DEVICES: custom_types.SupportedDevicesType = [
         (0x2433, 0xb200, None, 'Asetek 690LC (assuming NZXT Kraken X) (experimental)', {}),
     ]
 
@@ -403,7 +406,7 @@ class Legacy690Lc(_CommonAsetekDriver):
 class Hydro690Lc(Modern690Lc):
     """Corsair-branded fifth generation Asetek 690LC cooler."""
 
-    SUPPORTED_DEVICES = [
+    SUPPORTED_DEVICES: custom_types.SupportedDevicesType = [
         (0x1b1c, 0x0c02, None, 'Corsair Hydro H80i GT (experimental)', {}),
         (0x1b1c, 0x0c03, None, 'Corsair Hydro H100i GTX (experimental)', {}),
         (0x1b1c, 0x0c07, None, 'Corsair Hydro H110i GTX (experimental)', {}),
@@ -418,7 +421,7 @@ class Hydro690Lc(Modern690Lc):
         # --legacy-690lc, so we override it again
         return super().probe(handle, legacy_690lc=False, **kwargs)
 
-    def set_color(self, channel, mode, colors, **kwargs):
+    def set_color(self, channel, mode, colors, **kwargs) -> None:
         """Set the color mode for a specific channel."""
         if mode == 'rainbow':
             raise KeyError(f'unsupported lighting mode {mode}')
