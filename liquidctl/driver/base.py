@@ -62,7 +62,7 @@ class BaseDriver:
         """
         raise NotImplementedError()
 
-    def get_status(self, **kwargs) -> Optional[Union[List, List[Tuple[Union[str, int]]]]]:
+    def get_status(self, **kwargs) -> None:
         """Get a status report.
 
         Returns a list of `(property, value, unit)` tuples.
@@ -82,7 +82,7 @@ class BaseDriver:
         raise NotImplementedError()
 
     @property
-    def description(self) -> Optional[str]:
+    def description(self) -> None:
         """Human readable description of the corresponding device."""
         raise NotImplementedError()
 
@@ -115,7 +115,7 @@ class BaseDriver:
         raise NotImplementedError()
 
     @property
-    def address(self) -> Optional[str]:
+    def address(self) -> None:
         """Address of the device on the corresponding bus, or None if N/A.
 
         This typically depends on the bus enumeration order.
