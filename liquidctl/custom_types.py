@@ -7,18 +7,8 @@ SupportedDevicesType = List[Tuple[
         Union[
             str, int, 
             Tuple[float], 
-            Dict[
-                str, Tuple[int, ...]
-            ],
-            Dict[
-                str, int
-            ],
-            Final[
-                Dict[str, Tuple[int, ...]]
-            ],
-            Final[
-                Dict[str, int]
-            ]   
+            Dict[str, Tuple[int, ...]],
+            Dict[str, int],
         ]
     ]
 ]]
