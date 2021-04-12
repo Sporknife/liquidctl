@@ -20,24 +20,27 @@ from liquidctl.error import NotSupportedByDevice
 from liquidctl.pmbus import CommandCode as CMD
 from liquidctl.pmbus import linear_to_float
 
-_REPORT_LENGTH = 64
-_MIN_DELAY = 0.0025
-_ATTEMPTS = 3
+from typing import Final, List
+from liquidctl import custom_types
 
-_SEASONIC_READ_FIRMWARE_VERSION = CMD.MFR_SPECIFIC_FC
-_RAILS = ['+12V peripherals', '+12V EPS/ATX12V', '+12V motherboard/PCI-e', '+5V combined', '+3.3V combined']
+_REPORT_LENGTH: Final[int] = 64
+_MIN_DELAY: Final[float] = 0.0025
+_ATTEMPTS: Final[int] = 3
+
+_SEASONIC_READ_FIRMWARE_VERSION: Final[int] = CMD.MFR_SPECIFIC_FC
+_RAILS: Final[List[str]] = ['+12V peripherals', '+12V EPS/ATX12V', '+12V motherboard/PCI-e', '+5V combined', '+3.3V combined']
 
 
 class NzxtEPsu(UsbHidDriver):
     """NZXT E-series power supply unit."""
 
-    SUPPORTED_DEVICES = [
+    SUPPORTED_DEVICES: custom_types.SupportedDevicesType = [
         (0x7793, 0x5911, None, 'NZXT E500 (experimental)', {}),
         (0x7793, 0x5912, None, 'NZXT E650 (experimental)', {}),
         (0x7793, 0x2500, None, 'NZXT E850 (experimental)', {}),
     ]
 
-    def initialize(self, **kwargs):
+    def initialize(self, **kwargs) -> None:
         """Initialize the device.
 
         Apparently not required.
@@ -64,19 +67,19 @@ class NzxtEPsu(UsbHidDriver):
             status.append((f'{name} output power', self._get_float(CMD.READ_POUT, page=i), 'W'))
         return status
 
-    def set_color(self, channel, mode, colors, **kwargs):
+    def set_color(self, channel, mode, colors, **kwargs) -> None:
         """Not supported by this device."""
         raise NotSupportedByDevice()
 
-    def set_speed_profile(self, channel, profile, **kwargs):
+    def set_speed_profile(self, channel, profile, **kwargs) -> None:
         """Not supported by this device."""
         raise NotSupportedByDevice()
 
-    def set_fixed_speed(self, channel, duty, **kwargs):
+    def set_fixed_speed(self, channel, duty, **kwargs) -> None:
         """Not supported by this device."""
         raise NotSupportedByDevice()
 
-    def _write(self, data):
+    def _write(self, data) -> None:
         assert len(data) <= _REPORT_LENGTH
         packet = bytearray(1 + _REPORT_LENGTH)
         packet[1: 1 + len(data)] = data  # device doesn't use numbered reports
@@ -85,7 +88,7 @@ class NzxtEPsu(UsbHidDriver):
     def _read(self):
         return self.device.read(_REPORT_LENGTH)
 
-    def _wait(self):
+    def _wait(self) -> None:
         """Give the device some time and avoid error responses.
 
         Not well understood but probably related to the PIC16F1455
