@@ -17,6 +17,9 @@ from liquidctl.driver.usb import UsbHidDriver
 from liquidctl.error import NotSupportedByDevice
 from liquidctl.util import clamp
 
+from typing import Dict, List, Tuple
+from liquidctl import custom_types
+
 _LOGGER = logging.getLogger(__name__)
 
 _USAGE_PAGE = 0xff89
@@ -26,7 +29,7 @@ _REPORT_ID = 0xcc
 _REPORT_BYTE_LENGTH = 63
 _INIT_CMD = 0x60
 
-_COLOR_CHANNELS = {
+_COLOR_CHANNELS: Dict[str, Tuple[int, int]] = {
     'led1': (0x20, 0x01),
     'led2': (0x21, 0x02),
     'led3': (0x22, 0x04),
@@ -37,7 +40,7 @@ _COLOR_CHANNELS = {
     'led8': (0x27, 0x80),
 }
 
-_PULSE_SPEEDS = {
+_PULSE_SPEEDS: Dict[str, Tuple[int, int, int, int, int,  int]] = {
     'slowest':                          (0x40, 0x06, 0x40, 0x06, 0x20, 0x03),
     'slower':                           (0x78, 0x05, 0x78, 0x05, 0xbc, 0x02),
     'normal':                           (0xb0, 0x04, 0xb0, 0x04, 0xf4, 0x01),
@@ -46,7 +49,7 @@ _PULSE_SPEEDS = {
     'ludicrous':                        (0x20, 0x03, 0x20, 0x03, 0x90, 0x01),
 }
 
-_FLASH_SPEEDS = {
+_FLASH_SPEEDS: Dict[str, Tuple[int, int, int, int, int,  int]] = {
     'slowest':                          (0x64, 0x00, 0x64, 0x00, 0x60, 0x09),
     'slower':                           (0x64, 0x00, 0x64, 0x00, 0x90, 0x08),
     'normal':                           (0x64, 0x00, 0x64, 0x00, 0xd0, 0x07),
@@ -55,7 +58,7 @@ _FLASH_SPEEDS = {
     'ludicrous':                        (0x64, 0x00, 0x64, 0x00, 0x78, 0x05),
 }
 
-_DOUBLE_FLASH_SPEEDS = {
+_DOUBLE_FLASH_SPEEDS: Dict[str, Tuple[int, int, int, int, int,  int]] = {
     'slowest':                          (0x64, 0x00, 0x64, 0x00, 0x28, 0x0a),
     'slower ':                          (0x64, 0x00, 0x64, 0x00, 0x60, 0x09),
     'normal':                           (0x64, 0x00, 0x64, 0x00, 0x90, 0x08),
@@ -64,7 +67,7 @@ _DOUBLE_FLASH_SPEEDS = {
     'ludicrous':                        (0x64, 0x00, 0x64, 0x00, 0x40, 0x06),
 }
 
-_COLOR_CYCLE_SPEEDS = {
+_COLOR_CYCLE_SPEEDS: Dict[str, Tuple[int, int, int, int, int,  int]] = {
     'slowest':                          (0x78, 0x05, 0xb0, 0x04, 0x00, 0x00),
     'slower':                           (0x7e, 0x04, 0x1a, 0x04, 0x00, 0x00),
     'normal':                           (0x52, 0x03, 0xee, 0x02, 0x00, 0x00),
@@ -99,7 +102,7 @@ _COLOR_MODES = {
 class RgbFusion2(UsbHidDriver):
     """liquidctl driver for Gigabyte RGB Fusion 2.0 USB controllers."""
 
-    SUPPORTED_DEVICES = [
+    SUPPORTED_DEVICES: custom_types.SupportedDevicesType = [
         (0x048d, 0x5702, None, 'Gigabyte RGB Fusion 2.0 5702 Controller', {}),
         (0x048d, 0x8297, None, 'Gigabyte RGB Fusion 2.0 8297 Controller', {}),
     ]
@@ -157,7 +160,7 @@ class RgbFusion2(UsbHidDriver):
         _LOGGER.info('status reports not available from %s', self.description)
         return []
 
-    def set_color(self, channel, mode, colors, speed='normal', **kwargs):
+    def set_color(self, channel, mode, colors, speed='normal', **kwargs) -> None:
         """Set the color mode for a specific channel.
 
         Up to eight individual channels are available, named 'led1' through
@@ -218,15 +221,15 @@ class RgbFusion2(UsbHidDriver):
             self._send_feature_report(data)
         self._execute_report()
 
-    def set_speed_profile(self, channel, profile, **kwargs):
+    def set_speed_profile(self, channel, profile, **kwargs) -> None:
         """Not supported by this device."""
         raise NotSupportedByDevice()
 
-    def set_fixed_speed(self, channel, duty, **kwargs):
+    def set_fixed_speed(self, channel, duty, **kwargs) -> None:
         """Not supported by this device."""
         raise NotSupportedByDevice()
 
-    def reset_all_channels(self):
+    def reset_all_channels(self) -> None:
         """Reset all LED channels."""
         for addr1, _ in _COLOR_CHANNELS.values():
             self._send_feature_report([_REPORT_ID, addr1, 0])
@@ -235,11 +238,11 @@ class RgbFusion2(UsbHidDriver):
     def _get_feature_report(self, report_id):
         return self.device.get_feature_report(report_id, _REPORT_BYTE_LENGTH + 1)
 
-    def _send_feature_report(self, data):
+    def _send_feature_report(self, data) -> None:
         padding = [0x0]*(_REPORT_BYTE_LENGTH + 1 - len(data))
         self.device.send_feature_report(data + padding)
 
-    def _execute_report(self):
+    def _execute_report(self) -> None:
         """Request for the previously sent lighting settings to be applied."""
         self._send_feature_report([_REPORT_ID, 0x28, 0xff])
 
