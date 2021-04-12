@@ -23,7 +23,7 @@ from liquidctl.keyval import RuntimeStorage
 from liquidctl.pmbus import compute_pec
 from liquidctl.util import RelaxedNamesEnum, clamp, fraction_of_byte, \
                            u16le_from, normalize_profile
-from typing import Dict, Final, Union, Tuple, List
+from typing import Dict, Final, Union, Tuple, List, TYPE_CHECKING
 from liquidctl import custom_types
 
 _LOGGER = logging.getLogger(__name__)
@@ -207,6 +207,8 @@ class HydroPlatinum(UsbHidDriver):
         """
 
         # set the flag so the LED command will need to be set again
+        if TYPE_CHECKING:
+            assert self._data is not None
         self._data.store('leds_enabled', 0)
 
         self._data.store('pump_mode', _PumpMode[pump_mode].value)
@@ -247,6 +249,8 @@ class HydroPlatinum(UsbHidDriver):
         """
 
         for hw_channel in self._get_hw_fan_channels(channel):
+            if TYPE_CHECKING:
+                assert self._data is not None
             self._data.store(f'{hw_channel}_mode', _FanMode.FIXED_DUTY.value)
             self._data.store(f'{hw_channel}_duty', duty)
         self._send_set_cooling()
@@ -266,6 +270,8 @@ class HydroPlatinum(UsbHidDriver):
 
         profile = list(profile)
         for hw_channel in self._get_hw_fan_channels(channel):
+            if TYPE_CHECKING:
+                assert self._data is not None
             self._data.store(f'{hw_channel}_mode', _FanMode.CUSTOM_PROFILE.value)
             self._data.store(f'{hw_channel}_profile', profile)
         self._send_set_cooling()
@@ -313,7 +319,8 @@ class HydroPlatinum(UsbHidDriver):
             expanded = list(itertools.chain(*([color] * self._led_count for color in colors[:1])))
         else:
             assert False, 'assumed unreacheable'
-
+        if TYPE_CHECKING:
+            assert self._data is not None
         if self._data.load('leds_enabled', of_type=int, default=0) == 0:
             # These hex strings are currently magic values that work but Im not quite sure why.
             d1 = bytes.fromhex("0101ffffffffffffffffffffffffff7f7f7f7fff00ffffffff00ffffffff00ffffffff00ffffffff00ffffffff00ffffffffffffffffffffffffffffff")
