@@ -23,41 +23,43 @@ from liquidctl.keyval import RuntimeStorage
 from liquidctl.pmbus import compute_pec
 from liquidctl.util import RelaxedNamesEnum, clamp, fraction_of_byte, \
                            u16le_from, normalize_profile
+from typing import Dict, Final, Union, Tuple, List
+from liquidctl import custom_types
 
 _LOGGER = logging.getLogger(__name__)
 
-_REPORT_LENGTH = 64
-_WRITE_PREFIX = 0x3f
+_REPORT_LENGTH: Final[int] = 64
+_WRITE_PREFIX: Final[int] = 0x3f
 
-_FEATURE_COOLING = 0b000
-_FEATURE_COOLING2 = 0b011
-_CMD_GET_STATUS = 0xff
-_CMD_SET_COOLING = 0x14
+_FEATURE_COOLING: Final[int] = 0b000
+_FEATURE_COOLING2: Final[int] = 0b011
+_CMD_GET_STATUS: Final[int] = 0xff
+_CMD_SET_COOLING: Final[int] = 0x14
 
-_FEATURE_LIGHTING = None
-_CMD_SET_LIGHTING1 = 0b100
-_CMD_SET_LIGHTING2 = 0b101
-_CMD_SET_LIGHTING3 = 0b110
+_FEATURE_LIGHTING: Final = None
+_CMD_SET_LIGHTING1: Final[int] = 0b100
+_CMD_SET_LIGHTING2: Final[int] = 0b101
+_CMD_SET_LIGHTING3: Final[int] = 0b110
 
 # cooling data starts at offset 3 and ends just before the PEC byte
-_SET_COOLING_DATA_LENGTH = _REPORT_LENGTH - 4
-_SET_COOLING_DATA_PREFIX = [0x0, 0xff, 0x5, 0xff, 0xff, 0xff, 0xff, 0xff]
-_FAN_MODE_OFFSETS = [0x0b - 3, 0x11 - 3]
-_FAN_DUTY_OFFSETS = [offset + 5 for offset in _FAN_MODE_OFFSETS]
-_FAN_PROFILE_OFFSETS = [0x1e - 3, 0x2c - 3]
+_SET_COOLING_DATA_LENGTH: Final[int] = _REPORT_LENGTH - 4
+_SET_COOLING_DATA_PREFIX: Final[List[int]] = [0x0, 0xff, 0x5, 0xff, 0xff, 0xff, 0xff, 0xff]
+_FAN_MODE_OFFSETS: Final[List[int]] = [0x0b - 3, 0x11 - 3]
+_FAN_DUTY_OFFSETS: Final[List[int]] = [offset + 5 for offset in _FAN_MODE_OFFSETS]
+_FAN_PROFILE_OFFSETS: Final[List[int]] = [0x1e - 3, 0x2c - 3]
 _FAN_OFFSETS = list(zip(_FAN_MODE_OFFSETS, _FAN_DUTY_OFFSETS, _FAN_PROFILE_OFFSETS))
-_PUMP_MODE_OFFSET = 0x17 - 3
-_PROFILE_LENGTH_OFFSET = 0x1d - 3
-_PROFILE_LENGTH = 7
-_CRITICAL_TEMPERATURE = 60
+_PUMP_MODE_OFFSET: Final[int] = 0x17 - 3
+_PROFILE_LENGTH_OFFSET: Final[int] = 0x1d - 3
+_PROFILE_LENGTH: Final[int] = 7
+_CRITICAL_TEMPERATURE: Final[int] = 60
 
 
 @unique
 class _FanMode(Enum):
-    CUSTOM_PROFILE = 0x0
-    CUSTOM_PROFILE_WITH_EXTERNAL_SENSOR = 0x1
-    FIXED_DUTY = 0x2
-    FIXED_RPM = 0x4
+    CUSTOM_PROFILE: Final[int] = 0x0
+    CUSTOM_PROFILE_WITH_EXTERNAL_SENSOR: Final[int] = 0x1
+    FIXED_DUTY: Final[int] = 0x2
+    FIXED_RPM: Final[int] = 0x4
 
     @classmethod
     def _missing_(cls, value):
@@ -67,9 +69,9 @@ class _FanMode(Enum):
 
 @unique
 class _PumpMode(RelaxedNamesEnum):
-    QUIET = 0x0
-    BALANCED = 0x1
-    EXTREME = 0x2
+    QUIET: Final[int] = 0x0
+    BALANCED: Final[int] = 0x1
+    EXTREME: Final[int] = 0x2
 
     @classmethod
     def _missing_(cls, value):
@@ -110,7 +112,7 @@ def _quoted(*names):
 class HydroPlatinum(UsbHidDriver):
     """Corsair Hydro Platinum or Pro XT liquid cooler."""
 
-    SUPPORTED_DEVICES = [
+    SUPPORTED_DEVICES: custom_types.SupportedDevicesType = [
         (0x1b1c, 0x0c18, None, 'Corsair Hydro H100i Platinum (experimental)',
             {'fan_count': 2, 'fan_leds': 4}),
         (0x1b1c, 0x0c19, None, 'Corsair Hydro H100i Platinum SE (experimental)',
@@ -154,7 +156,7 @@ class HydroPlatinum(UsbHidDriver):
             _LOGGER.debug('instanced driver for %s', description)
             yield dev
 
-    def __init__(self, device, description, fan_count, fan_leds, **kwargs):
+    def __init__(self, device, description, fan_count, fan_leds, **kwargs) -> None:
         super().__init__(device, description, **kwargs)
         self._led_count = 16 + fan_count * fan_leds
         self._fan_names = [f'fan{i + 1}' for i in range(fan_count)]
@@ -191,7 +193,7 @@ class HydroPlatinum(UsbHidDriver):
         self._sequence = _sequence(self._data)
         return ret
 
-    def initialize(self, pump_mode='balanced', **kwargs):
+    def initialize(self, pump_mode='balanced', **kwargs) -> List[Tuple[str, str, str]]:
         """Initialize the device and set the pump mode.
 
         The device should be initialized every time it is powered on, including when
@@ -215,7 +217,7 @@ class HydroPlatinum(UsbHidDriver):
             _LOGGER.warning('outdated and possibly unsupported firmware version')
         return [('Firmware version', '{}.{}.{}'.format(*fw_version), '')]
 
-    def get_status(self, **kwargs):
+    def get_status(self, **kwargs) -> List[Tuple[str, Union[int, float], str]]:
         """Get a status report.
 
         Returns a list of `(property, value, unit)` tuples.
@@ -236,7 +238,7 @@ class HydroPlatinum(UsbHidDriver):
 
         return info
 
-    def set_fixed_speed(self, channel, duty, **kwargs):
+    def set_fixed_speed(self, channel, duty, **kwargs) -> None:
         """Set fan or fans to a fixed speed duty.
 
         Valid channel values are 'fanN', where N >= 1 is the fan number, and
@@ -249,7 +251,7 @@ class HydroPlatinum(UsbHidDriver):
             self._data.store(f'{hw_channel}_duty', duty)
         self._send_set_cooling()
 
-    def set_speed_profile(self, channel, profile, **kwargs):
+    def set_speed_profile(self, channel, profile, **kwargs) -> None:
         """Set fan or fans to follow a speed duty profile.
 
         Valid channel values are 'fanN', where N >= 1 is the fan number, and
@@ -268,7 +270,7 @@ class HydroPlatinum(UsbHidDriver):
             self._data.store(f'{hw_channel}_profile', profile)
         self._send_set_cooling()
 
-    def set_color(self, channel, mode, colors, **kwargs):
+    def set_color(self, channel, mode, colors, **kwargs) -> None:
         """Set the color of each LED.
 
         In reality the device does not have the concept of different channels
@@ -336,7 +338,7 @@ class HydroPlatinum(UsbHidDriver):
         if self._led_count > 40:
             self._send_command(_FEATURE_LIGHTING, _CMD_SET_LIGHTING3, data=data3)
 
-    def _check_color_args(self, channel, mode, colors):
+    def _check_color_args(self, channel, mode, colors) -> int:
         try:
             mincolors = self._mincolors[(channel, mode)]
             maxcolors = self._maxcolors[(channel, mode)]
@@ -350,7 +352,7 @@ class HydroPlatinum(UsbHidDriver):
             return maxcolors
         return len(colors)
 
-    def _get_hw_fan_channels(self, channel):
+    def _get_hw_fan_channels(self, channel) -> Union[str, List[str]]:
         if channel == 'fan':
             return self._fan_names
         if channel in self._fan_names:
