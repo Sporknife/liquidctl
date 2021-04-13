@@ -113,10 +113,10 @@ class BaseUsbDriver(BaseDriver):
             yield dev
 
     def __init__(self, device, description, **kwargs):
-        self.device = device
+        self.device = device        
         self._description = description
 
-    def connect(self, **kwargs):
+    def connect(self, **kwargs) -> object:
         """Connect to the device."""
         self.device.open()
         return self
@@ -126,37 +126,37 @@ class BaseUsbDriver(BaseDriver):
         self.device.close()
 
     @property
-    def description(self):
+    def description(self) -> str:
         """Human readable description of the corresponding device."""
         return self._description
 
     @property
-    def vendor_id(self):
+    def vendor_id(self) -> int:
         """16-bit numeric vendor identifier."""
         return self.device.vendor_id
 
     @property
-    def product_id(self):
+    def product_id(self) -> int:
         """16-bit umeric product identifier."""
         return self.device.product_id
 
     @property
-    def release_number(self):
+    def release_number(self) -> int:
         """16-bit BCD device versioning number."""
         return self.device.release_number
 
     @property
-    def serial_number(self):
+    def serial_number(self) -> Optional[str]:
         """Serial number reported by the device, or None if N/A."""
         return self.device.serial_number
 
     @property
-    def bus(self):
+    def bus(self) -> str:
         """Bus the device is connected to, or None if N/A."""
         return self.device.bus
 
     @property
-    def address(self):
+    def address(self) -> str:
         """Address of the device on the corresponding bus, or None if N/A.
 
         Dependendent on bus enumeration order.

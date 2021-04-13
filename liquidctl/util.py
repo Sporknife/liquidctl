@@ -48,24 +48,24 @@ class Hue2Accessory(Enum):
     KRAKENX_GEN4_RING = (0x10, 'Kraken X (X53, X63 or X73) Pump Ring')
     KRAKENX_GEN4_LOGO = (0x11, 'Kraken X (X53, X63 or X73) Pump Logo')
 
-    def __new__(cls, value, pretty_name):
+    def __new__(cls, value, pretty_name) -> object:
         member = object.__new__(cls)
         member.pretty_name = pretty_name
         member._value_ = value
         return member
 
     @classmethod
-    def _missing_(cls, value):
+    def _missing_(cls, value) -> object:
         dummy = object.__new__(cls)
         dummy.pretty_name = 'Unknown'
         dummy._name_ = f'UNKNOWN_{value}'
         dummy._value_ = value
         return dummy
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.pretty_name
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         return self.value == other.value
 
 
