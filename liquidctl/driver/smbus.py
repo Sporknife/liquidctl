@@ -275,7 +275,7 @@ class SmbusDriver(BaseDriver):
         self._product_id = product_id
         self._address = address
 
-    def connect(self, **kwargs):
+    def connect(self, **kwargs) -> object:
         """Connect to the device."""
         if check_unsafe('smbus', **kwargs):
             self._smbus.open()

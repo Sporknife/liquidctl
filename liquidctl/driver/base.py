@@ -133,7 +133,7 @@ class BaseDriver:
         """
         raise NotImplementedError()
 
-    def __enter__(self):
+    def __enter__(self) -> object:
         return self
 
     def __exit__(self, *args) -> None:
